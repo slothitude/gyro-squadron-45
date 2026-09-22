@@ -15,3 +15,9 @@ Four weapon tiers, kill-charged Super Shot, bombs, fighter and bomber brains, th
 
 ![Milestone 2 — the Act 1 arsenal](assets/generated/boss_fortress.png)
 
+## 2026-09-22 13:22 — Lore recovered
+
+A found document from the world (see LORE.md) and its sketch now live in this repo's diary_images. Oddworld law: the game's instructions are artifacts of its own world.
+
+![Lore recovered](diary_images/sketch_letter_page.png)
+
