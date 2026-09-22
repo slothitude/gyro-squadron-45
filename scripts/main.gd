@@ -1,9 +1,11 @@
 extends Node2D
-## GYRO SQUADRON '45 — Act 1 vertical slice (milestone 2).
+## GYRO SQUADRON '45 — Act 1 + Act 2 (milestone 3).
 ## Milestone 1 control rig is intact: tilt drives the plane, RECENTER
 ## re-captures neutral, the mode toggle routes a finger drag through the SAME
 ## TiltSource. Milestone 2 adds the Stage driver (waves -> boss -> tally),
-## the weapon/super/bomb actions, the HUD and the GAME OVER retry.
+## the weapon/super/bomb actions, the HUD and the GAME OVER retry. Milestone 3
+## rolls the run on into ACT 2 via the non-blocking banner after the act-1
+## tally.
 ## All simulation flows through sim_frame(delta) so tests/replays can step the
 ## whole game by hand (set_process(false) + manual calls).
 
@@ -62,6 +64,7 @@ func _start_stage() -> void:
 	stage.game_over.connect(_on_stage_game_over)
 	stage.stage_cleared.connect(_on_stage_cleared)
 	hud.hide_overlay()
+	hud.set_banner("", false)
 	game_over_shown = false
 	plane.velocity = Vector2.ZERO
 	plane.position = Vector2(
@@ -85,6 +88,7 @@ func sim_frame(delta: float) -> void:
 	plane.tilt_input = output
 	stage.advance(delta, output)
 	hud.update_from(stage)
+	hud.set_banner(stage.banner_text(), stage.state == Stage.ST_BANNER)
 	_refresh_buttons()
 	_debug_frames += 1
 	if SHOW_DEBUG and _debug_frames % Feel.DEBUG_SAMPLE_EVERY_N_FRAMES == 0:
@@ -140,6 +144,8 @@ func _on_stage_game_over() -> void:
 
 
 func _on_stage_cleared(tally: Dictionary) -> void:
+	if stage.has_next_act():
+		return  # the act banner takes over; the run continues into act 2
 	hud.show_tally(tally)
 
 

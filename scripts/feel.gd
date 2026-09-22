@@ -144,13 +144,93 @@ const STAGE_FIGHTER_SPAWN_INSET_PX := 40.0  # keep dive columns off the walls
 const STAGE_CLEAR_DELAY_SEC := 1.4    # explosion beat before the tally
 const STAGE_BOSS_SPAWN_Y := -140.0
 
-# -------------------------------------------------------------- pickups v1 --
+# -------------------------------------------------------------- pickups (m3) --
 const PICKUP_DROP_CHANCE := 0.22      # downed enemies occasionally drop P
 const PICKUP_FALL_SPEED := 130.0
 const PICKUP_RADIUS := 20.0
-const PICKUP_TIER_GAIN := 1           # v1-simple: each P = +1 tier (spec 3/tier arrives in m3)
+const PICKUPS_PER_TIER := 3           # spec powerups.weapon_tier pickups_per_tier: 3
 const PICKUP_COLOR := Color(0.95, 0.82, 0.25)
 const PICKUP_OUTLINE_COLOR := Color(0.1, 0.08, 0.05)
+
+# ---------------------------------------------------- escorts (m3, tier 3+) --
+const ESCORT_TIER_MIN := 3            # option planes arrive at weapon tier 3
+const ESCORT_MAX := 2                 # spec: max 2, tier-gated
+const ESCORT_SCALE := 0.5             # small copies of the player plane
+const ESCORT_ORBIT_RADIUS_PX := 52.0  # fixed orbit radius around the plane
+const ESCORT_ORBIT_RAD_PER_SEC := 2.4 # orbit angular speed
+const ESCORT_PHASE_SEPARATION_RAD := PI  # two options sit opposite each other
+
+# ------------------------------------------------------ enemies (Act 2, m3) --
+const JET_HP := 2                     # spec act2 unmarked_jet
+const JET_SPEED := 420.0              # fast dive, px/s
+const JET_RADIUS := 24.0
+const JET_SCORE := 120
+const JET_FIRST_FIRE_DELAY := 0.7
+const JET_FIRE_INTERVAL := 2.1
+const JET_BURST_COUNT := 2            # spec: 2-shot energy-bolt burst
+const JET_BURST_GAP_SEC := 0.14
+const JET_BOLT_SPEED := 340.0
+const JET_EXIT_SPEED := 260.0
+const JET_BODY_COLOR := Color(0.16, 0.17, 0.21)
+const JET_TRIM_COLOR := Color(0.85, 0.25, 0.2)
+
+const TURRET_HP := 6                  # spec act2 energy_turret
+const TURRET_RADIUS := 30.0
+const TURRET_SCORE := 200
+const TURRET_FIRST_DELAY := 1.0       # charge time before the first telegraph
+const TURRET_RECHARGE_SEC := 2.4      # charge time between beams
+const TURRET_TELEGRAPH_SEC := 1.0     # sweeping aim-line warning before the beam
+const TURRET_BEAM_SEC := 1.2          # seconds the horizontal beam stays hot
+const TURRET_BEAM_WIDTH_PX := 30.0
+const TURRET_TELEGRAPH_SWEEP_RAD := 0.7  # aim sweeps this far off horizontal
+const TURRET_STAY_SEC := 9.0          # pinned to the edge this long, then leaves
+const TURRET_EDGE_INSET_PX := 30.0
+const TURRET_LANE_MIN_Y := 220.0
+const TURRET_LANE_MAX_Y := 520.0
+const TURRET_BASE_COLOR := Color(0.2, 0.24, 0.3)
+const TURRET_CORE_COLOR := Color(1.0, 0.55, 0.25)
+const TURRET_TELEGRAPH_COLOR := Color(1.0, 0.45, 0.2, 0.45)
+const TURRET_BEAM_COLOR := Color(1.0, 0.6, 0.25, 0.85)
+
+# ------------------------------------------------------- proto_mech (boss 2) --
+const PROTO_HP := 70                  # spec act2: proto_mech hp 70
+const PROTO_PHASE2_HP := 35           # spec: phase 2 at 35
+const PROTO_ENTER_SPEED := 80.0       # px/s descent onto the stage
+const PROTO_ENTER_Y := 180.0
+const PROTO_DRIFT_SPEED_RAD := 0.4
+const PROTO_DRIFT_AMPLITUDE_PX := 90.0
+const PROTO_RADIUS := 80.0
+const PROTO_SCORE := 5000
+const PROTO_MISSILE_FIRST_DELAY := 0.7   # entry -> first lobbed volley
+const PROTO_MISSILE_PERIOD := 2.6        # seconds between volleys
+const PROTO_MISSILE_COUNT := 4           # missiles per lobbed arc volley
+const PROTO_MISSILE_GAP_SEC := 0.16      # gap between missiles of one volley
+const PROTO_MISSILE_VY_UP := 330.0       # initial upward launch speed
+const PROTO_MISSILE_GRAVITY := 640.0     # px/s^2 fall (lobbed arc)
+const PROTO_MISSILE_VX := 200.0          # fan width of the arc
+const PROTO_MISSILE_RADIUS := 12.0
+const PROTO_MISSILE_MUZZLE := Vector2(0.0, -34.0)
+const PROTO_LASER_PERIOD := 0.8          # phase 1 idle wait before a telegraph
+const PROTO_LASER_PERIOD_P2 := 2.0       # phase 2 idle wait between beams
+const PROTO_LASER_TELEGRAPH_SEC := 1.1   # warning line before the beam
+const PROTO_LASER_BEAM_SEC := 1.3        # seconds the horizontal beam stays hot
+const PROTO_LASER_WIDTH_PX := 46.0
+const PROTO_PATTERN_REST_SEC := 1.0      # phase 1 pause between patterns
+const PROTO_LASER_FALLBACK_Y := 320.0    # aim row when no target is set
+const PROTO_ARMOR_COLOR := Color(0.3, 0.32, 0.38)
+const PROTO_PLATE_COLOR := Color(0.48, 0.51, 0.58)
+const PROTO_GLOW_COLOR := Color(0.4, 0.95, 1.0)
+const PROTO_TELEGRAPH_COLOR := Color(0.55, 0.9, 1.0, 0.4)
+const PROTO_BEAM_COLOR := Color(0.6, 0.92, 1.0, 0.8)
+
+# ------------------------------------------------------------ stage acts (m3) --
+const FINAL_ACT := 2                  # content acts so far (m4 adds act 3)
+const STAGE_BANNER_SEC := 2.6         # act transition card hold time
+const ACT2_TITLE := "ACT 2: BLACK BUDGET"
+const STAGE_JET_WAVE_SEC := 3.4       # act 2: jet every ~3.4 s
+const STAGE_JET_FIRST_DELAY := 1.2
+const STAGE_TURRET_WAVE_SEC := 8.5    # act 2: turret every ~8.5 s
+const STAGE_TURRET_FIRST_DELAY := 3.0
 
 # --------------------------------------------------------------- fx / hud --
 const EXPLOSION_SMALL_RADIUS := 46.0

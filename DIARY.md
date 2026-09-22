@@ -29,3 +29,9 @@ Steps: 1) M3 (building now): powerup gating + escorts + Act 2 (jet + turret + pr
 
 1) M3 (building): escorts + Act2. 2) M4: Act3 + alien_core boss. 3) M5: title + audio + difficulty. 4) M6: full verify + export + itch + critic. DONE: M1+M2 green (82 checks).
 
+## 2026-09-23 00:28 — Milestone 3 — the gate, the wingmen, the black budget
+
+Spec law lands: 3 pickups bank one weapon tier (the v1 +1-per-pickup is gone), 22% drops verified statistically on the seeded stream. Tier 3 arms option planes — small copies of the P-51 orbiting at a fixed radius, firing one parallel stream every volley, max 2 at tier 4. Act 2 opens after the fortress falls: the ACT 2: BLACK BUDGET card, 55 s of mixed waves (act-1 fighters/bombers plus unmarked jets diving fast with 2-shot energy-bolt bursts and edge-pinned energy turrets that sweep a telegraph line onto the horizontal and burn the row), then the proto_mech — 70 hp, lobbed missile arcs, telegraphed laser sweeps, and at 35 it runs both at once. 18 new checks + a 25 s replay that weaves act 1 on super+bomb, gates the tier, forces the clear and rides the banner into act 2. Wall: tilt 17x2, m2 24x2, m3 18x2, three replays, full run 0 errors. Act-2 sprites are procedural silhouettes (original_assets law) — the art pass can land later without touching a test.
+
+![Milestone 3 — the gate, the wingmen, the black budget](assets/generated/enemy_ufo.png)
+

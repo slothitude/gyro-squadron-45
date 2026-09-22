@@ -19,6 +19,7 @@ var _scale := 1.0
 class Bullet:
 	extends Sprite2D
 	var velocity := Vector2.ZERO
+	var gravity := 0.0               # px/s^2 downward pull (lobbed missiles); 0 = straight
 	var radius := 8.0
 	var damage := 1
 	var friendly := true
@@ -34,7 +35,9 @@ func setup(friendly: bool, pool_cap: int) -> void:
 
 
 ## Reuse a dead bullet, grow the pool under the cap, or give up (returns null).
-func spawn(pos: Vector2, vel: Vector2, damage: int, radius: float, friendly: bool = true) -> Bullet:
+## gravity (px/s^2, positive falls) is optional; straight-line shots omit it.
+func spawn(pos: Vector2, vel: Vector2, damage: int, radius: float, friendly: bool = true,
+		gravity: float = 0.0) -> Bullet:
 	var b := _find_inactive()
 	if b == null:
 		if _bullets.size() >= cap:
@@ -46,6 +49,7 @@ func spawn(pos: Vector2, vel: Vector2, damage: int, radius: float, friendly: boo
 		_bullets.append(b)
 	b.position = pos
 	b.velocity = vel
+	b.gravity = gravity
 	b.damage = damage
 	b.radius = radius
 	b.friendly = friendly
@@ -72,6 +76,8 @@ func step(delta: float) -> int:
 	for b in _bullets:
 		if not b.active:
 			continue
+		if b.gravity != 0.0:
+			b.velocity.y += b.gravity * delta
 		b.position += b.velocity * delta
 		if b.position.y < -m or b.position.y > view.y + m \
 				or b.position.x < -m or b.position.x > view.x + m:

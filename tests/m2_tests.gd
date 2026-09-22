@@ -137,7 +137,7 @@ func _run() -> void:
 	bomber.position = Vector2(360.0, 240.0)
 	s.track_enemy(bomber)
 	s.spawn_boss()
-	var boss_hp0 := s.boss.hp
+	var boss_hp0: int = s.boss.hp   # (m3: stage.boss holds either boss class -> untyped)
 	var bomb2 := s.use_bomb()          # bombs the boss + both enemies
 	var third := s.use_bomb()          # empty: refused
 	var fourth := s.use_bomb()
@@ -263,16 +263,19 @@ func _run() -> void:
 		and s2.is_game_over() and game_over_count == 1,
 		"lives=%d over=%s signals=%d" % [s2.lives, s2.is_game_over(), game_over_count])
 
-	# ======================== pickups v1 ===================================
+	# ======================== pickups ======================================
+	# (m3 revision: the spec 3-per-tier gate replaced the v1 +1-per-pickup,
+	# so this check now banks Feel.PICKUPS_PER_TIER pickups to advance.)
 	var s3 := await make_stage()
-	s3.spawn_pickup_at(s3.plane.position + Vector2(0.0, -4.0))
-	s3.advance(DT, 0.0)
+	for i in Feel.PICKUPS_PER_TIER:
+		s3.spawn_pickup_at(s3.plane.position + Vector2(0.0, -4.0))
+		s3.advance(DT, 0.0)
 	var s3_tier_after := s3.weapon.tier
 	s3.weapon.tier = Feel.WEAPON_TIERS
 	s3.spawn_pickup_at(s3.plane.position)
 	s3.advance(DT, 0.0)
-	check("pickup_raises_tier_capped_at_max", s3_tier_after == Feel.WEAPON_TIER_MIN + 1
-		and s3.pickups_spawned == 2 and s3.weapon.tier == Feel.WEAPON_TIERS,
+	check("pickup_gate_advances_tier_and_caps_at_max", s3_tier_after == Feel.WEAPON_TIER_MIN + 1
+		and s3.pickups_spawned == Feel.PICKUPS_PER_TIER + 1 and s3.weapon.tier == Feel.WEAPON_TIERS,
 		"tier=%d->%d pickups=%d" % [Feel.WEAPON_TIER_MIN + 1, s3.weapon.tier, s3.pickups_spawned])
 	var p_fall := Stage.Pickup.new()
 	p_fall.position = Vector2(270.0, 100.0)

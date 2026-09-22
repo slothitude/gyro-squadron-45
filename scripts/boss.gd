@@ -52,6 +52,15 @@ func phase2() -> bool:
 	return phase == PH_TWO
 
 
+## Beam seam (shared with ProtoMech): the Act-1 fortress has no laser.
+func is_beam_active() -> bool:
+	return false
+
+
+func beam_hits(_pos: Vector2) -> bool:
+	return false
+
+
 ## Seconds between sweeps at the current phase (the phase-2 speedup lives here).
 func sweep_interval() -> float:
 	return Feel.BOSS1_SWEEP_INTERVAL_P2 if phase == PH_TWO else Feel.BOSS1_SWEEP_INTERVAL

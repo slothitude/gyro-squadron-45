@@ -1,11 +1,12 @@
 class_name Stage
 extends Node2D
-## The Act-1 stage simulation (milestone 2): spawn table -> boss -> tally.
-## Owns both bullet pools, the enemies, the boss, the pickups and the player's
-## weapon state. Everything is hand-stepped (advance()) — no physics, no RNG
-## outside the seeded stage generator — so tests and replays are deterministic.
-## main.gd calls advance(delta, tilt_output) once per frame; tests call it
-## directly.
+## The Act stage simulation (m2 = act 1; m3 adds act 2): spawn table -> boss
+## -> clear -> act banner -> next act's mixed waves -> its boss -> final
+## tally. Owns both bullet pools, the enemies, the boss, the pickups and the
+## player's weapon state. Everything is hand-stepped (advance()) — no physics,
+## no RNG outside the seeded stage generator — so tests and replays are
+## deterministic. main.gd calls advance(delta, tilt_output) once per frame;
+## tests call it directly.
 
 signal score_changed(score: int)
 signal lives_changed(lives: int)
@@ -13,23 +14,30 @@ signal tier_changed(tier: int)
 signal charge_changed(kills: int, needed: int)
 signal bombs_changed(count: int)
 signal boss_entered
+signal act_started(act: int)
+signal pickup_progress_changed(collected: int, needed: int)
 signal game_over
 signal stage_cleared(tally: Dictionary)
 
 const ST_WAVES := 0
 const ST_BOSS := 1
 const ST_CLEAR := 2
-const ST_OVER := 3
+const ST_BANNER := 3
+const ST_OVER := 4
 
 const STATE_NAMES := {
 	ST_WAVES: "waves",
 	ST_BOSS: "boss",
 	ST_CLEAR: "clear",
+	ST_BANNER: "act_banner",
 	ST_OVER: "game_over",
 }
 
 var state := ST_WAVES
 var time := 0.0
+var act := 1
+var act_time := 0.0              # clock inside the current act (spawn tables)
+var transition_title := ""       # act banner text while in ST_BANNER
 var score := 0
 var kills := 0
 var lives := Feel.PLAYER_LIVES
@@ -44,18 +52,25 @@ var player_bullets: BulletPool
 var enemy_bullets: BulletPool
 var enemies: Array[Enemy] = []
 var pickups: Array[Pickup] = []
-var boss: BossFortress = null
+var boss = null                  # BossFortress (act 1) or ProtoMech (act 2)
 
 var fighters_spawned := 0
 var bombers_spawned := 0
+var jets_spawned := 0
+var turrets_spawned := 0
 var pickups_spawned := 0
+var pickups_collected := 0
+var pickup_progress := 0         # pickups banked toward the current tier gate
 var tally := {}
 var tally_shown := false
 
 var rng := RandomNumberGenerator.new()
 var _fighter_timer := Feel.STAGE_FIGHTER_FIRST_DELAY
 var _bomber_timer := Feel.STAGE_BOMBER_FIRST_DELAY
+var _jet_timer := Feel.STAGE_JET_FIRST_DELAY
+var _turret_timer := Feel.STAGE_TURRET_FIRST_DELAY
 var _clear_timer := 0.0
+var _banner_timer := 0.0
 var _beam_acc := 0.0
 var _bomb_flash := 0.0
 var _fx: Array[Dictionary] = []
@@ -88,6 +103,9 @@ func start() -> void:
 	rng.state = Feel.STAGE_RNG_SEED
 	state = ST_WAVES
 	time = 0.0
+	act = 1
+	act_time = 0.0
+	transition_title = ""
 	score = 0
 	kills = 0
 	lives = Feel.PLAYER_LIVES
@@ -98,10 +116,17 @@ func start() -> void:
 	tally_shown = false
 	fighters_spawned = 0
 	bombers_spawned = 0
+	jets_spawned = 0
+	turrets_spawned = 0
 	pickups_spawned = 0
+	pickups_collected = 0
+	pickup_progress = 0
 	_fighter_timer = Feel.STAGE_FIGHTER_FIRST_DELAY
 	_bomber_timer = Feel.STAGE_BOMBER_FIRST_DELAY
+	_jet_timer = Feel.STAGE_JET_FIRST_DELAY
+	_turret_timer = Feel.STAGE_TURRET_FIRST_DELAY
 	_clear_timer = 0.0
+	_banner_timer = 0.0
 	_beam_acc = 0.0
 	_bomb_flash = 0.0
 	_fx.clear()
@@ -138,12 +163,23 @@ func step(delta: float) -> void:
 		_clear_timer -= delta
 		if _clear_timer <= 0.0 and not tally_shown:
 			_finish_tally()
+		if tally_shown and has_next_act():
+			_begin_banner()
+		return
+	if state == ST_BANNER:
+		_step_pools(delta)
+		_step_pickups(delta)
+		_cull()
+		_banner_timer -= delta
+		if _banner_timer <= 0.0:
+			_begin_next_act()
 		return
 	time += delta
+	act_time += delta
 	iframe_left = maxf(0.0, iframe_left - delta)
 	if state == ST_WAVES:
 		_spawn_waves(delta)
-		if time >= Feel.STAGE_LEN_SEC and boss == null:
+		if act_time >= Feel.STAGE_LEN_SEC and boss == null:
 			spawn_boss()
 	_step_pools(delta)
 	_step_enemies(delta)
@@ -159,8 +195,9 @@ func step(delta: float) -> void:
 ## --------------------------------------------------------- spawn table --
 
 ## Spawn intervals shrink a step every STAGE_ESCALATE_EVERY_SEC, floor-clamped.
+## Escalation runs per act (act_time), so act 2 opens at full intervals.
 func wave_scale() -> float:
-	var steps := int(time / Feel.STAGE_ESCALATE_EVERY_SEC)
+	var steps := int(act_time / Feel.STAGE_ESCALATE_EVERY_SEC)
 	return maxf(Feel.STAGE_ESCALATE_MIN_SCALE, pow(Feel.STAGE_ESCALATE_SCALE, float(steps)))
 
 
@@ -175,6 +212,16 @@ func _spawn_waves(delta: float) -> void:
 	if _bomber_timer <= 0.0:
 		_bomber_timer += Feel.STAGE_BOMBER_WAVE_SEC * esc
 		_spawn_bomber()
+	if act < 2:
+		return
+	_jet_timer -= delta
+	if _jet_timer <= 0.0:
+		_jet_timer += Feel.STAGE_JET_WAVE_SEC * esc
+		_spawn_jet()
+	_turret_timer -= delta
+	if _turret_timer <= 0.0:
+		_turret_timer += Feel.STAGE_TURRET_WAVE_SEC * esc
+		_spawn_turret()
 
 
 func _spawn_fighter() -> void:
@@ -199,19 +246,50 @@ func _spawn_bomber() -> void:
 	track_enemy(e)
 
 
+func _spawn_jet() -> void:
+	var view := get_viewport_rect().size
+	var e := Enemy.UnmarkedJet.new()
+	e.pool = enemy_bullets
+	e.target = plane
+	var inset := Feel.STAGE_FIGHTER_SPAWN_INSET_PX
+	e.position = Vector2(rng.randf_range(inset, view.x - inset), Feel.STAGE_SPAWN_Y)
+	track_enemy(e)
+
+
+func _spawn_turret() -> void:
+	var view := get_viewport_rect().size
+	var e := Enemy.EnergyTurret.new()
+	e.pool = enemy_bullets
+	e.target = plane
+	var from_left := rng.randf() < 0.5
+	e.edge_dir = 1.0 if from_left else -1.0
+	var y := rng.randf_range(Feel.TURRET_LANE_MIN_Y, Feel.TURRET_LANE_MAX_Y)
+	e.position = Vector2(Feel.TURRET_EDGE_INSET_PX if from_left \
+			else view.x - Feel.TURRET_EDGE_INSET_PX, y)
+	track_enemy(e)
+
+
 func track_enemy(e: Enemy) -> void:
 	e.died.connect(_on_enemy_died)
 	add_child(e)
 	enemies.append(e)
-	if e.kind == "bomber":
-		bombers_spawned += 1
-	else:
-		fighters_spawned += 1
+	match e.kind:
+		"bomber":
+			bombers_spawned += 1
+		"jet":
+			jets_spawned += 1
+		"turret":
+			turrets_spawned += 1
+		_:
+			fighters_spawned += 1
 
 
 func spawn_boss() -> void:
 	var view := get_viewport_rect().size
-	boss = BossFortress.new()
+	if act >= 2:
+		boss = ProtoMech.new()
+	else:
+		boss = BossFortress.new()
 	boss.pool = enemy_bullets
 	boss.target = plane
 	boss.position = Vector2(view.x * 0.5, Feel.STAGE_BOSS_SPAWN_Y)
@@ -219,6 +297,16 @@ func spawn_boss() -> void:
 	add_child(boss)
 	state = ST_BOSS
 	boss_entered.emit()
+
+
+## False once the final content act has been cleared.
+func has_next_act() -> bool:
+	return act < Feel.FINAL_ACT
+
+
+## Act banner text (held while the state is ST_BANNER, else empty).
+func banner_text() -> String:
+	return transition_title
 
 
 ## ------------------------------------------------------- player actions --
@@ -347,6 +435,15 @@ func _collide() -> void:
 			if boss != null and boss.alive \
 					and boss.position.distance_to(plane.position) <= boss.radius + Feel.PLAYER_RADIUS:
 				player_hit()
+		# laser beams (act 2 turret + proto_mech rows)
+		if iframe_left <= 0.0:
+			for e in enemies:
+				if e.alive and e.is_beam_active() and e.beam_hits(plane.position):
+					player_hit()
+					break
+			if boss != null and boss.alive and boss.is_beam_active() \
+					and boss.beam_hits(plane.position):
+				player_hit()
 	# pickups vs plane
 	for p in pickups:
 		if not p.collected and p.position.distance_to(plane.position) <= Feel.PICKUP_RADIUS + Feel.PLAYER_RADIUS:
@@ -395,6 +492,34 @@ func _on_boss_defeated() -> void:
 	state = ST_CLEAR
 
 
+## ------------------------------------------------------- act transitions --
+
+## Wipe the screen and hold the act card before the next act's waves.
+func _begin_banner() -> void:
+	transition_title = Feel.ACT2_TITLE
+	_banner_timer = Feel.STAGE_BANNER_SEC
+	enemy_bullets.clear_all()
+	for e in enemies:
+		e.queue_free()
+	enemies.clear()
+	if boss != null:      # the fallen boss comes off the board between acts
+		boss.queue_free()
+		boss = null
+	state = ST_BANNER
+	act_started.emit(act + 1)
+
+
+func _begin_next_act() -> void:
+	act += 1
+	act_time = 0.0
+	transition_title = ""
+	_fighter_timer = Feel.STAGE_FIGHTER_FIRST_DELAY
+	_bomber_timer = Feel.STAGE_BOMBER_FIRST_DELAY
+	_jet_timer = Feel.STAGE_JET_FIRST_DELAY
+	_turret_timer = Feel.STAGE_TURRET_FIRST_DELAY
+	state = ST_WAVES
+
+
 func _finish_tally() -> void:
 	var bonus := Feel.NO_DAMAGE_BONUS if damage_taken == 0 else 0
 	score += bonus
@@ -419,8 +544,20 @@ func _spawn_pickup(pos: Vector2) -> void:
 	pickups_spawned += 1
 
 
+## Spec powerups gating: PICKUPS_PER_TIER pickups bank into one tier step
+## (m2 shipped a v1 +1-per-pickup simplification; this is the spec law).
 func _collect_pickup(_p: Pickup) -> void:
-	_set_tier((weapon.tier if weapon != null else Feel.WEAPON_TIER_MIN) + Feel.PICKUP_TIER_GAIN)
+	pickups_collected += 1
+	if weapon == null:
+		return
+	if weapon.tier >= Feel.WEAPON_TIERS:
+		pickup_progress = 0   # maxed out: the pickup is spent, the tier holds
+	elif pickup_progress + 1 >= Feel.PICKUPS_PER_TIER:
+		pickup_progress = 0
+		_set_tier(weapon.tier + 1)
+	else:
+		pickup_progress += 1
+	pickup_progress_changed.emit(pickup_progress, Feel.PICKUPS_PER_TIER)
 
 
 ## Test seam: force a pickup into the world (drop chance stays untested RNG).
@@ -473,7 +610,8 @@ func _draw() -> void:
 
 class Pickup:
 	extends Node2D
-	## P powerup v1: falls straight down; each pickup = +1 weapon tier.
+	## P powerup: falls straight down; PICKUPS_PER_TIER of them advance the
+	## weapon one tier (spec powerups gating, milestone 3).
 	## Procedurally drawn (spec law "original_assets").
 
 	var collected := false

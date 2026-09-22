@@ -12,6 +12,8 @@ var charge_bar: ChargeBar
 var overlay: ColorRect
 var overlay_title: Label
 var overlay_hint: Label
+var banner_label: Label
+var _banner_text := ""
 
 var _state := {
 	"score": 0,
@@ -62,11 +64,18 @@ func _ready() -> void:
 	overlay_hint.position = Vector2(0.0, 440.0)
 	overlay_hint.size = Vector2(540.0, 44.0)
 
+	banner_label = _make_label(46)
+	banner_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	banner_label.position = Vector2(0.0, 210.0)
+	banner_label.size = Vector2(540.0, 60.0)
+	banner_label.visible = false
+
 	add_child(score_label)
 	add_child(lives_label)
 	add_child(tier_label)
 	add_child(bombs_label)
 	add_child(charge_bar)
+	add_child(banner_label)
 	add_child(overlay)
 	overlay.add_child(overlay_title)
 	overlay.add_child(overlay_hint)
@@ -121,6 +130,20 @@ func show_tally(tally: Dictionary) -> void:
 
 func overlay_visible() -> bool:
 	return overlay.visible
+
+
+## Act-transition card: transient and NON-blocking (play continues under it).
+## main drives it from the Stage state each frame.
+func set_banner(text: String, shown: bool) -> void:
+	if _banner_text == text and banner_label.visible == shown:
+		return
+	_banner_text = text
+	banner_label.text = text
+	banner_label.visible = shown
+
+
+func banner_visible() -> bool:
+	return banner_label.visible
 
 
 func hide_overlay() -> void:
