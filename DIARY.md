@@ -21,3 +21,11 @@ A found document from the world (see LORE.md) and its sketch now live in this re
 
 ![Lore recovered](diary_images/sketch_letter_page.png)
 
+## 2026-09-22 23:51 — ROADMAP: M3→M6 to itch
+
+Steps: 1) M3 (building now): powerup gating + escorts + Act 2 (jet + turret + proto_mech boss). 2) M4: Act 3 futuristic content (UFO scout + mecha_transform enemies + alien_core final boss with 3 phases). 3) M5: title screen + audio + difficulty tiers. 4) M6: full verify-retry pass across all acts + export. 5) itch page + butler push + critic playtest. DONE: M1 M2 green (82 checks), repo live, lore (pilot letter) + sketches complete.
+
+## 2026-09-22 23:52 — ROADMAP to itch
+
+1) M3 (building): escorts + Act2. 2) M4: Act3 + alien_core boss. 3) M5: title + audio + difficulty. 4) M6: full verify + export + itch + critic. DONE: M1+M2 green (82 checks).
+
